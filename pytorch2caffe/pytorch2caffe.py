@@ -201,9 +201,18 @@ def _split(raw, tensor, split_size, dim=0):
                                   type='Slice',
                                   bottom=[log.blobs(tensor)],
                                   top=top_blobs)
-    slice_num = int(np.floor(tensor.size()[dim] / split_size))
-    slice_param = caffe_net.pb.SliceParameter(
-        axis=dim, slice_point=[split_size * i for i in range(1, slice_num)])
+    if isinstance(split_size, list):
+        split_size.pop()
+        slice_points = []
+        pt = 0
+        for ss in split_size:
+            pt += ss
+            slice_points.append(pt)
+        slice_param = caffe_net.pb.SliceParameter(axis=dim, slice_point=slice_points)
+    else:
+        slice_num = int(np.floor(tensor.size()[dim] / split_size))
+        slice_param = caffe_net.pb.SliceParameter(
+            axis=dim, slice_point=[split_size * i for i in range(1, slice_num)])
     layer.param.slice_param.CopyFrom(slice_param)
     log.cnet.add_layer(layer)
     return x
